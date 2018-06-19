@@ -1,9 +1,9 @@
-#' @title rev.comp
+#' @title revComp
 #' @description Get the (option: reverse) complementary sequence of the input sequence.
 #' @param x The sequence to be revserve complement.
 #' @param rev Logical option to choose whether reverse the complementary sequence.
 #' @export
-rev.comp<-function(x,rev=TRUE)
+revComp<-function(x,rev=TRUE)
 {
   x<-toupper(x)
   y<-rep("N",nchar(x))
