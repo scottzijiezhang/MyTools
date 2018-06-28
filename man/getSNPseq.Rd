@@ -4,7 +4,7 @@
 \alias{getSNPseq}
 \title{getSNPseq}
 \usage{
-getSNPseq(snp.vcf, genome, n_flank)
+getSNPseq(snp.vcf, genome, n_flank, IUPAC = FALSE)
 }
 \arguments{
 \item{snp.vcf}{A table contain the SNP information. The format is the first five columns of the VCF format plus a column for strand. (CHROM,POS,ID,REF,ALT,strand).}
@@ -12,6 +12,8 @@ getSNPseq(snp.vcf, genome, n_flank)
 \item{genome}{The BSgenome object}
 
 \item{n_flank}{The number of nucleotide to get around the SNP.}
+
+\item{IUPAC}{logcal option. Whether to output IUPAC code for SNP instead of outputing two sequence.}
 }
 \description{
 Given BSgenome object, get the sequence flanking the SNPs.
