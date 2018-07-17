@@ -40,7 +40,7 @@ plotSNPpeakPairs <- function(genotypeFile,SNPID,geneName,IP_BAMs, INPUT_BAMs, si
 }
 
 .getGenotype <- function(vcf.gz, SNPID){
-   tmp <- system2(command = "zcat", args = paste0(genotypeFile," |grep '",SNPID,"' |cat"),stdout = T)
+   tmp <- system2(command = "zcat", args = paste0(vcf.gz," |grep '",SNPID,"' |cat"),stdout = T)
    geno <- strsplit(tmp,split = "\t")[[1]]
    return(geno)
 }

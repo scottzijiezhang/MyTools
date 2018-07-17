@@ -4,7 +4,7 @@
 \alias{matchRandomPeak}
 \title{matchRandomPeak}
 \usage{
-matchRandomPeak(peak.gr, randomPeaks, txdb)
+matchRandomPeak(peak.gr, randomPeaks, txdb, nPeaks = 1e+10)
 }
 \arguments{
 \item{peak.gr}{The GRange object of peak}
