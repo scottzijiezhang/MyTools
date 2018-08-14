@@ -74,6 +74,84 @@ plotGeneCoverage <- function(IP_BAMs, INPUT_BAMs, size.IP, size.INPUT,X, geneNam
 }
 
 
+#' @title plotVirusCov
+#' @param IP_BAM The bam files for IP samples
+#' @param INPUT_BAM The bam files for INPUT samples
+#' @param geneModel The GRange object storing positive and negative strand as gene model of the virus.
+#' @param libraryType The specification of strandness of the RNA library. "opposite" for mRNA stranded library that sequenced the reverse complementary strand; "same" for samll RNA library that sequenced the same strand. 
+#' @param center The function used to calculate the center of multiple replicates. Can be mean or median.
+#' @param annotation The data.frame specify the genes on the viral genome. Needs to have column "chr", "start", "end", "gene".
+#' @param ZoomIn The range to plot the coverage. 
+#' @param hideStrand The strand to hide when plot. Default is none.
+#' @export
+plotVirusCov <- function(IP_BAM, INPUT_BAM,geneModel,libraryType = "opposite",center = mean,annotation, ZoomIn = NULL, hideStrand = "none"){
+  #########################
+  ### Generage gene model #
+  #########################
+  ## convert annotation into GRange
+  anno.gr <- makeGRangesFromDataFrame(annotation,keep.extra.columns = T)
+  
+  anno.exon <- character(length =nrow(annotation))
+  for(i in 1:nrow(annotation)){
+    anno.exon[i] <- paste0("annotate(\"rect\", xmin =",annotation$start[i] ,", xmax = ",annotation$end[i] ,", ymin = -0.06*yscale, ymax = -0*yscale, alpha = .99, colour = \"black\")+ annotate(\"text\", x = mean(c(",annotation$start[i],",",annotation$end[i],")), y = -0.03*yscale, label = \"",annotation$gene[i],"\", colour = \"yellow\")" )
+  }
+  
+  pseudo_intron <- as.data.frame( GenomicRanges::setdiff(geneModel[[1]],anno.gr,ignore.strand=T) )
+  anno.intron <- character(length =nrow(pseudo_intron))
+  for(i in 1:nrow(pseudo_intron)){
+    anno.intron[i] <- paste0("annotate(\"segment\", x =",pseudo_intron$start[i] ,", xend = ",pseudo_intron$end[i] ,", y = -0.03*yscale, yend = -0.03*yscale, alpha = .99, colour = \"black\", size = 1) " )
+  }
+  
+  p2 <- paste( paste(anno.exon,collapse = "+"), paste(anno.intron,collapse = "+"), sep = "+")
+  
+  ###########################
+  ## Generate coverage ######
+  ###########################
+  ## Positive strand
+  genePositive <- names(geneModel[which( as.character(strand(geneModel) )== "+")])
+  IP.cov_positive <- getAllCoverage(geneModel= geneModel,bamFiles = IP_BAM,geneName = genePositive, libraryType = libraryType, ZoomIn = ZoomIn)
+  INPUT.cov_positive <- getAllCoverage(geneModel= geneModel,bamFiles = INPUT_BAM,geneName = genePositive, libraryType = libraryType, ZoomIn = ZoomIn)
+  cov.data_positive <-  cbind(IP.cov_positive,INPUT.cov_positive) 
+  
+  ## Normalized positive strand
+  size.positive <- colSums(cov.data_positive)/ mean( colSums(cov.data_positive))
+  cov.data_positive.norm <- t( t(cov.data_positive)/ size.positive )
+  
+  ## Negative strand
+  geneNegative <- names(geneModel[which( as.character(strand(geneModel) )== "-")])
+  IP.cov_Negative <- getAllCoverage(geneModel= geneModel,bamFiles = IP_BAM,geneName = geneNegative, libraryType = libraryType, ZoomIn = ZoomIn)
+  INPUT.cov_Negative <- getAllCoverage(geneModel= geneModel,bamFiles = INPUT_BAM,geneName = geneNegative, libraryType = libraryType, ZoomIn = ZoomIn)
+  cov.data_Negative <-  cbind(IP.cov_Negative,INPUT.cov_Negative) 
+  
+  ## Normalized Negative strand
+  size.Negative <- colSums(cov.data_Negative)/ mean( colSums(cov.data_Negative))
+  cov.data_Negative.norm <- t( t(cov.data_Negative)/ size.Negative )
+  
+  ## get average from replicates
+  X <- c(rep("IP",length(IP_BAM)),rep("INPUT",length(INPUT_BAM)))
+  mean_norm_positive <- data.frame( t( apply(cov.data_positive.norm,1,tapply,X,mean) ) )
+  mean_norm_negative <- data.frame( t( apply(cov.data_Negative.norm,1,tapply,X,mean) ) )
+  colnames(mean_norm_negative) <-paste0(colnames(mean_norm_negative),".neg")
+  
+  cov.data <- dplyr::mutate(genome_location = 1:nrow(mean_norm_negative) , cbind(mean_norm_positive,mean_norm_negative) )
+  
+  yscale <- max(mean_norm_positive,mean_norm_negative)
+  
+  p1 <- "ggplot(data = cov.data,aes(genome_location))"
+  
+  if(hideStrand == "none"){
+    p3 <- "geom_line(aes(y=INPUT,colour = \"+\"))+geom_ribbon(aes(ymax = IP,ymin=0,fill = \"+\"), alpha = 0.4)+geom_line(aes(y=(-INPUT.neg-0.06*yscale),colour = \"-\"))+geom_ribbon(aes(ymax = -0.06*yscale,ymin=(-IP.neg-0.06*yscale),fill = \"-\"), alpha = 0.4) +labs(y=\"normalized coverage\")+scale_x_continuous(breaks = round(seq(min(cov.data$genome_location), max(cov.data$genome_location), by = ((max(cov.data$genome_location)-min(cov.data$genome_location))/10) ) ),expand = c(0,0) )+theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = \"black\") )+scale_y_continuous(expand = c(0, 0))+scale_fill_discrete(name=\"IP\") + scale_colour_discrete(name=\"INPUT\")"
+  }else if(hideStrand == "+"){
+    p3 <- "geom_line(aes(y=(-INPUT.neg-0.06*yscale),colour = \"-\"))+geom_ribbon(aes(ymax = -0.06*yscale,ymin=(-IP.neg-0.06*yscale),fill = \"-\"), alpha = 0.4) +labs(y=\"normalized coverage\")+scale_x_continuous(breaks = round(seq(min(cov.data$genome_location), max(cov.data$genome_location), by = ((max(cov.data$genome_location)-min(cov.data$genome_location))/10) ) ),expand = c(0,0) )+theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = \"black\") )+scale_y_continuous(expand = c(0, 0))+scale_fill_discrete(name=\"IP\") + scale_colour_discrete(name=\"INPUT\")"
+  }else if(hideStrand == "-"){
+    p3 <- "geom_line(aes(y=INPUT,colour = \"+\"))+geom_ribbon(aes(ymax = IP,ymin=0,fill = \"+\"), alpha = 0.4)+labs(y=\"normalized coverage\")+scale_x_continuous(breaks = round(seq(min(cov.data$genome_location), max(cov.data$genome_location), by = ((max(cov.data$genome_location)-min(cov.data$genome_location))/10) ) ),expand = c(0,0) )+theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = \"black\") )+scale_y_continuous(expand = c(0, 0))+scale_fill_discrete(name=\"IP\") + scale_colour_discrete(name=\"INPUT\")"
+  }else{ stop("Please specify strand to be hide as \"+\", \"-\" or \"none\" !! ")}
+  
+  p <- paste(p1,p2,p3,sep = "+")
+  
+  eval(parse( text = p ))
+}
+
 ## helper function to get average coverage of a gene of multiple samples
 getAveCoverage <- function(geneModel,bamFiles,geneName,size.factor, libraryType = libraryType, center ,ZoomIn){
   locus <- as.data.frame( range(geneModel[geneName][[1]]) )
@@ -208,4 +286,20 @@ getCov <- function(bf,locus, libraryType ){
     return(p)
   }
   
+}
+
+
+
+
+getAllCoverage <- function(geneModel,bamFiles,geneName, libraryType = libraryType ,ZoomIn){
+  locus <- as.data.frame( range(geneModel[geneName][[1]]) )
+  if(is.null(ZoomIn)){
+  }else{
+    locus$start = ZoomIn[1]
+    locus$end = ZoomIn[2]
+    locus$width = ZoomIn[2] - ZoomIn[1] + 1
+  }
+  covs <- sapply(bamFiles,getCov,locus=locus, libraryType = libraryType)
+  
+  return(covs)
 }
