@@ -229,56 +229,7 @@ plotVirusCovPairs <- function(IP_BAM, INPUT_BAM, X , geneModel,libraryType = "op
     
   }
   
-  
-  ###########################
-  ## Generate coverage ######
-  ###########################
-  ## Positive strand
-  genePositive <- names(geneModel[which( as.character(strand(geneModel) )== "+")])
-  IP.cov_positive <- getAllCoverage(geneModel= geneModel,bamFiles = IP_BAM,geneName = genePositive, libraryType = libraryType, ZoomIn = ZoomIn)
-  INPUT.cov_positive <- getAllCoverage(geneModel= geneModel,bamFiles = INPUT_BAM,geneName = genePositive, libraryType = libraryType, ZoomIn = ZoomIn)
-  cov.data_positive <-  cbind(IP.cov_positive,INPUT.cov_positive) 
-  
-  ## Normalized positive strand
-  size.positive <- colSums(cov.data_positive)/ mean( colSums(cov.data_positive))
-  cov.data_positive.norm <- t( t(cov.data_positive)/ size.positive )
-  
-  ## Negative strand
-  geneNegative <- names(geneModel[which( as.character(strand(geneModel) )== "-")])
-  IP.cov_Negative <- getAllCoverage(geneModel= geneModel,bamFiles = IP_BAM,geneName = geneNegative, libraryType = libraryType, ZoomIn = ZoomIn)
-  INPUT.cov_Negative <- getAllCoverage(geneModel= geneModel,bamFiles = INPUT_BAM,geneName = geneNegative, libraryType = libraryType, ZoomIn = ZoomIn)
-  cov.data_Negative <-  cbind(IP.cov_Negative,INPUT.cov_Negative) 
-  
-  ## Normalized Negative strand
-  size.Negative <- colSums(cov.data_Negative)/ mean( colSums(cov.data_Negative))
-  cov.data_Negative.norm <- t( t(cov.data_Negative)/ size.Negative )
-  
-  ## get average from replicates
-  X <- c(rep("IP",length(IP_BAM)),rep("INPUT",length(INPUT_BAM)))
-  mean_norm_positive <- data.frame( t( apply(cov.data_positive.norm,1,tapply,X,mean) ) )
-  mean_norm_negative <- data.frame( t( apply(cov.data_Negative.norm,1,tapply,X,mean) ) )
-  colnames(mean_norm_negative) <-paste0(colnames(mean_norm_negative),".neg")
-  
-  cov.data <- dplyr::mutate( genome_location = if(is.null(ZoomIn)){1:nrow(mean_norm_negative)}else{ ZoomIn[1]:ZoomIn[2]}  , cbind(mean_norm_positive,mean_norm_negative) )
-  
-  yscale <- max(mean_norm_positive,mean_norm_negative)
-  
-  p1 <- "ggplot(data = cov.data,aes(genome_location))"
-  
-  if(hideStrand == "none"){
-    p3 <- "geom_line(aes(y=INPUT,colour = \"+\"))+geom_ribbon(aes(ymax = IP,ymin=0,fill = \"+\"), alpha = 0.4)+geom_line(aes(y=(-INPUT.neg-0.06*yscale),colour = \"-\"))+geom_ribbon(aes(ymax = -0.06*yscale,ymin=(-IP.neg-0.06*yscale),fill = \"-\"), alpha = 0.4) +labs(y=\"normalized coverage\")+scale_x_continuous(breaks = round(seq(min(cov.data$genome_location), max(cov.data$genome_location), by = ((max(cov.data$genome_location)-min(cov.data$genome_location))/10) ) ),expand = c(0,0) )+theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = \"black\") )+scale_y_continuous(expand = c(0, 0))+scale_fill_discrete(name=\"IP\") + scale_colour_discrete(name=\"INPUT\")"
-  }else if(hideStrand == "+"){
-    yscale <-  max(mean_norm_negative)
-    p3 <- "geom_line(aes(y=(INPUT.neg),colour = \"-\"))+geom_ribbon(aes(ymin = 0,ymax=(IP.neg),fill = \"-\"), alpha = 0.4) +labs(y=\"normalized coverage\")+scale_x_continuous(breaks = round(seq(min(cov.data$genome_location), max(cov.data$genome_location), by = ((max(cov.data$genome_location)-min(cov.data$genome_location))/10) ) ),expand = c(0,0) )+theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = \"black\") )+scale_y_continuous(expand = c(0, 0))+scale_fill_discrete(name=\"IP\") + scale_colour_discrete(name=\"INPUT\")"
-  }else if(hideStrand == "-"){
-    yscale <-  max(mean_norm_positive)
-    p3 <- "geom_line(aes(y=INPUT,colour = \"+\"))+geom_ribbon(aes(ymax = IP,ymin=0,fill = \"+\"), alpha = 0.4)+labs(y=\"normalized coverage\")+scale_x_continuous(breaks = round(seq(min(cov.data$genome_location), max(cov.data$genome_location), by = ((max(cov.data$genome_location)-min(cov.data$genome_location))/10) ) ),expand = c(0,0) )+theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = \"black\") )+scale_y_continuous(expand = c(0, 0))+scale_fill_discrete(name=\"IP\") + scale_colour_discrete(name=\"INPUT\")"
-  }else{ stop("Please specify strand to be hide as \"+\", \"-\" or \"none\" !! ")}
-  
-  p <- paste(p1,p2,p3,sep = "+")
-  
-  eval(parse( text = p ))
-}
+
 
   ###########################
   ## Generate coverage ######
