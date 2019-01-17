@@ -102,13 +102,17 @@ plotVirusCov <- function(IP_BAM, INPUT_BAM,geneModel,libraryType = "opposite",ce
     for(i in 1:nrow(pseudo_intron)){
       anno.intron[i] <- paste0("annotate(\"segment\", x =",pseudo_intron$start[i] ,", xend = ",pseudo_intron$end[i] ,", y = -0.03*yscale, yend = -0.03*yscale, alpha = .99, colour = \"black\", size = 1) " )
     }
+    
+    p2 <- paste( paste(anno.exon,collapse = "+"), paste(anno.intron,collapse = "+"), sep = "+")
+    
   }else{
     ZoomIn.gr <- GRanges( seqnames = unique(seqnames(anno.gr)) , IRanges(start = ZoomIn[1], end = ZoomIn[2]) )
-    tmpAnno <- as.data.frame( foreach( i = 1:length(anno.gr), .combine = c )%do%{ intersect(anno.gr[i], ZoomIn.gr) } )
+    tmpAnno <- as.data.frame( pintersect(anno.gr, ZoomIn.gr) )
+    tmpAnno <- tmpAnno[tmpAnno$hit, ]
     anno.exon <- character(length = length( findOverlaps(anno.gr, ZoomIn.gr) ) )
     
     for(i in 1:length(anno.exon)){
-      anno.exon[i] <- paste0("annotate(\"rect\", xmin =",tmpAnno$start[i] ,", xmax = ",tmpAnno$end[i] ,", ymin = -0.06*yscale, ymax = -0*yscale, alpha = .99, colour = \"black\")+ annotate(\"text\", x = mean(c(",tmpAnno$start[i],",",tmpAnno$end[i],")), y = -0.03*yscale, label = \"",annotation$gene[ queryHits( findOverlaps(anno.gr, ZoomIn.gr) )[i]  ],"\", colour = \"yellow\")" )
+      anno.exon[i] <- paste0("annotate(\"rect\", xmin =",tmpAnno$start[i] ,", xmax = ",tmpAnno$end[i] ,", ymin = -0.06*yscale, ymax = -0*yscale, alpha = .99, colour = \"black\")+ annotate(\"text\", x = mean(c(",tmpAnno$start[i],",",tmpAnno$end[i],")), y = -0.03*yscale, label = \"",tmpAnno$gene[i],"\", colour = \"yellow\")" )
     }
     
     p2 <-  paste(anno.exon,collapse = "+")
@@ -206,13 +210,17 @@ plotVirusCovPairs <- function(IP_BAM, INPUT_BAM, X , geneModel,libraryType = "op
     for(i in 1:nrow(pseudo_intron)){
       anno.intron[i] <- paste0("annotate(\"segment\", x =",pseudo_intron$start[i] ,", xend = ",pseudo_intron$end[i] ,", y = -0.03*yscale, yend = -0.03*yscale, alpha = .99, colour = \"black\", size = 1) " )
     }
+    
+    p2 <- paste( paste(anno.exon,collapse = "+"), paste(anno.intron,collapse = "+"), sep = "+")
+    
   }else{
     ZoomIn.gr <- GRanges( seqnames = unique(seqnames(anno.gr)) , IRanges(start = ZoomIn[1], end = ZoomIn[2]) )
-    tmpAnno <- as.data.frame( foreach( i = 1:length(anno.gr), .combine = c )%do%{ intersect(anno.gr[i], ZoomIn.gr) } )
+    tmpAnno <- as.data.frame( pintersect(anno.gr, ZoomIn.gr) )
+    tmpAnno <- tmpAnno[tmpAnno$hit, ]
     anno.exon <- character(length = length( findOverlaps(anno.gr, ZoomIn.gr) ) )
     
     for(i in 1:length(anno.exon)){
-      anno.exon[i] <- paste0("annotate(\"rect\", xmin =",tmpAnno$start[i] ,", xmax = ",tmpAnno$end[i] ,", ymin = -0.06*yscale, ymax = -0*yscale, alpha = .99, colour = \"black\")+ annotate(\"text\", x = mean(c(",tmpAnno$start[i],",",tmpAnno$end[i],")), y = -0.03*yscale, label = \"",annotation$gene[ queryHits( findOverlaps(anno.gr, ZoomIn.gr) )[i]  ],"\", colour = \"yellow\")" )
+      anno.exon[i] <- paste0("annotate(\"rect\", xmin =",tmpAnno$start[i] ,", xmax = ",tmpAnno$end[i] ,", ymin = -0.06*yscale, ymax = -0*yscale, alpha = .99, colour = \"black\")+ annotate(\"text\", x = mean(c(",tmpAnno$start[i],",",tmpAnno$end[i],")), y = -0.03*yscale, label = \"",tmpAnno$gene[i],"\", colour = \"yellow\")" )
     }
     
     p2 <-  paste(anno.exon,collapse = "+")
